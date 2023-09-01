@@ -18,18 +18,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '400406844298.dkr.ecr.eu-north-1.amazonaws.com/wordpress:latest'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+      - name: Set up AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
+      - name: Install Trivy
+        run: |
+          brew install aquasecurity/trivy/trivy
+
+      - name: List repositories and scan most recent image
+        run: |
+          registry_id="400406844298"
+          # List all repositories in the ECR registry
+          repositories=$(aws ecr describe-repositories --query 'repositories[].repositoryName' --output text)
+          for repository in $repositories; do
+            echo "Scanning repository: $repository"
+            # Get the most recent image tag from the repository
+            most_recent_image_tag=$(aws ecr describe-images --repository-name $repository --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
+            echo "Scanning most recent image: $most_recent_image_tag"
+            # Run Trivy vulnerability scanner
+            trivy image $registry_id.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$repository:$most_recent_image_tag
+          done
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-north-1
