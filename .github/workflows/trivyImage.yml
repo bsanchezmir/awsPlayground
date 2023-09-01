@@ -21,7 +21,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '400406844298.dkr.ecr.eu-north-1.amazonaws.com/wordpress:latest'
+          image-ref: '400406844298.dkr.ecr.eu-north-1.amazonaws.com/wordpress'
           format: 'sarif'
           output: 'trivy-results.sarif'
         env:
