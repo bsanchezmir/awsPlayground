@@ -31,12 +31,14 @@ jobs:
               images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
             fi
           done
-          images=${images%?}  # remove the last comma
-          echo "::set-output name=matrix::{\"image\": [$images]}"
+          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
+
+      - name: Set matrix
+        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
         id: set-matrix
 
   scan:
@@ -48,7 +50,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        image: ${{fromJson(needs.prepare.outputs.matrix)}}
+        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -64,4 +66,4 @@ jobs:
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif' 
+          sarif_file: 'trivy-results.sarif'
