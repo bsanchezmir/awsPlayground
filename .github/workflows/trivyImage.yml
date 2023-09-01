@@ -27,7 +27,7 @@ jobs:
               images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
             fi
           done
-          echo "{IMAGE_MATRIX}={\"image\": [$images]}" >> "$GITHUB_ENV"
+          echo "{IMAGE_MATRIX}={image: [$images]}" >> $GITHUB_ENV
 
 
 
