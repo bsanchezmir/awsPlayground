@@ -39,7 +39,6 @@ jobs:
 
       - name: Set matrix
         run: echo "${IMAGE_MATRIX}"
-        
         id: set-matrix
 
   scan:
@@ -51,7 +50,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
+        image: ${{fromJson(needs.prepare.outputs.$IMAGE_MATRIX).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
