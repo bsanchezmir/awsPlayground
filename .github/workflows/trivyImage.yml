@@ -27,25 +27,16 @@ jobs:
           for repository in $repositories; do
             # Get the most recent image tag from the repository
             most_recent_image_tag=$(aws ecr describe-images --repository-name $repository --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
-            images="$images,$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag"
+            images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
           done
-          images="${images:1}"
-          echo "$images" > images.txt
+          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
 
       - name: Set matrix
-        run: |
-          content=`cat images.txt`
-          images=$(echo "$content" | tr "," "\n")
-          matrix="{\"image\": ["
-          for image in $images; do
-            matrix="$matrix\"$image\","
-          done
-          matrix="${matrix%,}]"
-          echo "::set-output name=matrix::$matrix"
+        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
         id: set-matrix
 
   scan:
@@ -57,8 +48,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        include:
-          - image: ${{fromJson(needs.prepare.outputs.matrix).image }}
+        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -70,8 +60,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
-          
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif' 
+          sarif_file: 'trivy-results.sarif'
