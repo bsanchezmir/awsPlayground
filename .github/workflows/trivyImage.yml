@@ -38,7 +38,7 @@ jobs:
           AWS_DEFAULT_REGION: eu-north-1
 
       - name: Set matrix
-        run: echo "matrix={$IMAGE_MATRIX}"
+        run: echo "matrix=$IMAGE_MATRIX" >> $GITHUB_OUTPUT
         id: set-matrix
 
   scan:
