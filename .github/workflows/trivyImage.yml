@@ -7,10 +7,6 @@ on:
 jobs:
   prepare:
     runs-on: ubuntu-20.04
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
