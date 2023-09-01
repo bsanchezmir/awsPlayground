@@ -24,15 +24,21 @@ jobs:
           # List all repositories in the ECR registry
           repositories=$(aws ecr describe-repositories --query 'repositories[].repositoryName' --output text)
           images=""
+          count=0
           for repository in $repositories; do
             # Get the most recent image tag from the repository
             most_recent_image_tag=$(aws ecr describe-images --repository-name $repository --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
             if [ "$most_recent_image_tag" != "None" ]; then
-              images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
+              image="$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag"
+              images="$images,\"$image\""
+              echo "IMAGE_$count=$image" >> $GITHUB_ENV
+              count=$((count + 1))
             fi
           done
-          images=${images%?}  # remove the last comma
+          images="[$images]"
+          images=${images#[,]}
           echo "IMAGES=$images" >> $GITHUB_ENV
+          echo "IMAGE_COUNT=$count" >> $GITHUB_ENV
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -48,7 +54,8 @@ jobs:
       contents: read
     strategy:
       matrix:
-        image: ${{ fromJSON('[' + env.IMAGES + ']') }}
+        include:
+          - ${{ fromJSON(env.IMAGES) }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
