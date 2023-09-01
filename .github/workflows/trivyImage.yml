@@ -37,10 +37,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
 
-      - name: Set matrix
-        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
-        id: set-matrix
-
   scan:
     needs: prepare
     runs-on: ubuntu-20.04
