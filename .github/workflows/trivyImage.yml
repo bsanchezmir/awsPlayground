@@ -7,6 +7,10 @@ on:
 jobs:
   prepare:
     runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -28,14 +32,11 @@ jobs:
             fi
           done
           images=${images%?}  # remove the last comma
-          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
+          echo "::set-output name=matrix::{\"image\": [$images]}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
-
-      - name: Set matrix
-        run: echo "matrix=${IMAGE_MATRIX}" >> $GITHUB_OUTPUT
         id: set-matrix
 
   scan:
