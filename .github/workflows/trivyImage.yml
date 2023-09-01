@@ -27,7 +27,9 @@ jobs:
           for repository in $repositories; do
             # Get the most recent image tag from the repository
             most_recent_image_tag=$(aws ecr describe-images --repository-name $repository --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
-            images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
+            if [ "$most_recent_image_tag" != "None" ]; then
+              images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
+            fi
           done
           echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
         env:
