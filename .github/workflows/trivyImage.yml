@@ -31,14 +31,14 @@ jobs:
               images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
             fi
           done
-          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
+          echo "IMAGE_MATRIX={\"image\": [$images]}" 
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
 
       - name: Set matrix
-        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
+        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"  >> $GITHUB_OUTPUT
         id: set-matrix
 
   scan:
