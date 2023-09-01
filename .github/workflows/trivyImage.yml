@@ -24,25 +24,21 @@ jobs:
           # List all repositories in the ECR registry
           repositories=$(aws ecr describe-repositories --query 'repositories[].repositoryName' --output text)
           images=""
-          count=0
           for repository in $repositories; do
             # Get the most recent image tag from the repository
             most_recent_image_tag=$(aws ecr describe-images --repository-name $repository --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
             if [ "$most_recent_image_tag" != "None" ]; then
-              image="$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag"
-              images="$images,\"$image\""
-              echo "IMAGE_$count=$image" >> $GITHUB_ENV
-              count=$((count + 1))
+              images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
             fi
           done
-          images="[$images]"
-          images=${images#[,]}
-          echo "IMAGES=$images" >> $GITHUB_ENV
-          echo "IMAGE_COUNT=$count" >> $GITHUB_ENV
+          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
+
+      - name: Set matrix
+        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
         id: set-matrix
 
   scan:
@@ -54,8 +50,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        include:
-          - ${{ fromJSON(env.IMAGES) }}
+        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
