@@ -31,14 +31,17 @@ jobs:
               images="$images\"$registry_id.dkr.ecr.$region.amazonaws.com/$repository:$most_recent_image_tag\","
             fi
           done
-          echo "IMAGE_MATRIX={\"image\": [$images]}" >> $GITHUB_ENV
+          echo "{IMAGE_MATRIX}={\"image\": [$images]}" >> "$GITHUB_ENV"
+
+
+          
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
 
       - name: Set matrix
-        run: echo "${IMAGE_MATRIX}"
+        run: echo "::set-output name=matrix::${IMAGE_MATRIX}"
         id: set-matrix
 
   scan:
@@ -50,7 +53,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        image: ${{fromJson(needs.prepare.matrix).image }}
+        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
