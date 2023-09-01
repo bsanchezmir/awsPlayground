@@ -21,13 +21,13 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '400406844298.dkr.ecr.eu-north-1.amazonaws.com/wordpress'
+          image-ref: '400406844298.dkr.ecr.eu-north-1.amazonaws.com/wordpress:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-west-2
+          AWS_DEFAULT_REGION: eu-north-1
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
