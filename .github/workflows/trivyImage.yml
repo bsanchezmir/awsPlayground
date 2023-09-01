@@ -50,7 +50,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        image: ${{fromJson(needs.prepare.outputs.$IMAGE_MATRIX).image }}
+        image: ${{fromJson(needs.prepare.outputs.matrix).image }}
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
