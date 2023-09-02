@@ -63,4 +63,4 @@ jobs:
       - name: Upload Kubesec scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file:  ${{ matrix.file }}.sarif
+          sarif_file:  ${{ matrix.file }}.sarif 
