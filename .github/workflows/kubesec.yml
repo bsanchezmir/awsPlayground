@@ -58,11 +58,8 @@ jobs:
           template: ./sarif.tpl
           format: template
           output:  ${{ matrix.file }}.sarif
-          input: ${{ matrix.file }}
-
-      - name: Print kubesec-results.sarif
-        run: cat  ${{ matrix.file }}.sarif
-          
+          filename: ${{ matrix.file }}
+  
       - name: Upload Kubesec scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
