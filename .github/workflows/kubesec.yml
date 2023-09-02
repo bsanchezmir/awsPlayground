@@ -24,7 +24,7 @@ jobs:
           files=$(find . -name "*.yaml" -o -name "*.yml")
           k8s_files=""
           for file in $files; do
-            if grep -q "apiVersion:" $file && grep -q "kind:" $file && grep -q "metadata:" $file && grep -q "spec:" $file; then
+            if grep -q "^apiVersion:" $file && grep -q "^kind:" $file && grep -q "^metadata:" $file && grep -q "^spec:" $file; then
               k8s_files="$k8s_files\"$file\","
             fi
           done
