@@ -58,7 +58,7 @@ jobs:
           template: ./sarif.tpl
           format: template
           output:  ${{ matrix.file }}.sarif
-          filename: ${{ matrix.file }}
+          input: ${{ matrix.file }}
 
       - name: Print kubesec-results.sarif
         run: cat  ${{ matrix.file }}.sarif
