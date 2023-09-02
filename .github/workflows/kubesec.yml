@@ -19,14 +19,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Find YAML files
+      - name: Find Kubernetes YAML files
         run: |
           files=$(find . -name "*.yaml" -o -name "*.yml")
-          files_list=""
+          k8s_files=""
           for file in $files; do
-            files_list="$files_list\"$file\","
+            if grep -q "apiVersion:" $file && grep -q "kind:" $file && grep -q "metadata:" $file && grep -q "spec:" $file; then
+              k8s_files="$k8s_files\"$file\","
+            fi
           done
-          echo "FILE_MATRIX={\"file\": [$files_list]}" >> $GITHUB_ENV 
+          echo "FILE_MATRIX={\"file\": [$k8s_files]}" >> $GITHUB_ENV 
 
       - name: Set matrix
         run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
