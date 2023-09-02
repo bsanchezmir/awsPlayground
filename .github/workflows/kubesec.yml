@@ -2,35 +2,50 @@ name: Kubesec
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
   schedule:
     - cron: '34 10 * * 3'
 
 jobs:
-  find-files:
-    runs-on: ubuntu-latest
+  prepare:
+    runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@v3
-    - id: set-matrix
-      run: |
-        files=$(find . -name "*.yaml" -o -name "*.yml" | jq -R -s -c 'split("\n")[:-1]')
-        echo "::set-output name=matrix::{\"include\":[$(echo "$files" | jq -R -c 'gsub("\n";",")' | jq -c 'split(",")' | jq -c 'map({file: .})')]}"
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Find YAML files
+        run: |
+          files=$(find . -name "*.yaml" -o -name "*.yml")
+          files_list=""
+          for file in $files; do
+            files_list="$files_list\"$file\","
+          done
+          echo "FILE_MATRIX={\"file\": [$files_list]}" >> $GITHUB_ENV 
+
+      - name: Set matrix
+        run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
+        id: set-matrix
 
   lint:
-    needs: find-files
-    runs-on: ubuntu-latest
+    needs: prepare
+    runs-on: ubuntu-20.04
     permissions:
+      security-events: write
       actions: read
       contents: read
-      security-events: write
     strategy:
-      matrix: ${{fromJson(needs.find-files.outputs.matrix)}}
+      matrix:
+        file: ${{fromJson(needs.prepare.outputs.matrix).file }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Run kubesec scanner
         uses: controlplaneio/kubesec-action@43d0ddff5ffee89a6bb9f29b64cd865411137b14
         with:
