@@ -11,7 +11,7 @@ on:
     - cron: '34 10 * * 3'
 
 jobs:
-  prepare:
+  findyamls:
     runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -34,8 +34,8 @@ jobs:
         run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
         id: set-matrix
 
-  scan:
-    needs: prepare
+  kubesec:
+    needs: findyaml
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -43,7 +43,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        file: ${{fromJson(needs.prepare.outputs.matrix).file }}
+        file: ${{fromJson(needs.findyaml.outputs.matrix).file }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
