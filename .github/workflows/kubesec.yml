@@ -52,8 +52,8 @@ jobs:
         uses: bsanchezmir/kubesec-action@latest
         with:
           exit-code: "0"
-          format: template
-          template: bsanchezmir/kubesec-action/sarif.tpl
+          format: json
+          template: template/sarif.tpl
           output:  ${{ matrix.file }}.sarif
           input: ${{ matrix.file }}
 
