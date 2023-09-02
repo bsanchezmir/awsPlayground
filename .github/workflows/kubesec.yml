@@ -53,6 +53,7 @@ jobs:
         with:
           exit-code: "0"
           template: template/sarif.tpl
+          format: sarif
           output:  ${{ matrix.file }}.sarif
           input: ${{ matrix.file }}
 
