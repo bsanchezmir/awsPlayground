@@ -34,9 +34,9 @@ jobs:
         run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
         id: set-matrix
 
-  lint:
+  scan:
     needs: prepare
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       actions: read
