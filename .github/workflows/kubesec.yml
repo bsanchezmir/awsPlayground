@@ -29,13 +29,12 @@ jobs:
             fi
           done
           echo "FILE_MATRIX={\"file\": [$k8s_files]}" >> $GITHUB_ENV 
-
       - name: Set matrix
         run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
         id: set-matrix
 
   kubesec:
-    needs: findyaml
+    needs: findyamls
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -43,7 +42,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        file: ${{fromJson(needs.findyaml.outputs.matrix).file }}
+        file: ${{fromJson(needs.findyamls.outputs.matrix).file }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
