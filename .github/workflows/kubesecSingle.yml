@@ -1,0 +1,30 @@
+name: kubesec
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get sarif.tpl
+        run: wget https://raw.githubusercontent.com/bsanchezmir/kubesec-action/main/sarif.tpl
+
+      - name: Run kubesec scanner
+        uses: bsanchezmir/kubesec-action@latest
+        with:
+          input: insecure.yaml
+          exit-code: "0"
+          format: template
+          template: ./sarif.tpl
+          output: kubesec-results.sarif
+
+      - name: Upload Kubesec scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: kubesec-results.sarif
