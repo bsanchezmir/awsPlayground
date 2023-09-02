@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: insecure-namespace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-service
+  namespace: insecure-namespace
+spec:
+  selector:
+    app: insecure-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: insecure-serviceaccount
+  namespace: insecure-namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-deployment
+  namespace: insecure-namespace
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      serviceAccountName: insecure-serviceaccount
+      containers:
+      - name: insecure-container
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        securityContext:
+          runAsUser: 0
+          privileged: true
+          allowPrivilegeEscalation: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+      hostNetwork: true
+      hostPID: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-pod
+  namespace: insecure-namespace
+  labels:
+    purpose: demonstrate-vulnerabilities
+spec:
+  containers:
+  - name: insecure-container
+    image: nginx
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+    volumeMounts:
+    - name: host-root-volume
+      mountPath: /host
+      readOnly: false
+  volumes:
+  - name: host-root-volume
+    hostPath:
+      path: /
+      type: Directory
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insecure-clusterrole
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insecure-clusterrolebinding
+subjects:
+- kind: ServiceAccount
+  name: insecure-serviceaccount
+  namespace: insecure-namespace
+roleRef:
+  kind: ClusterRole
+  name: insecure-clusterrole
+  apiGroup: rbac.authorization.k8s.io
