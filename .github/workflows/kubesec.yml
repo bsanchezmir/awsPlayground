@@ -54,7 +54,7 @@ jobs:
           input: ${{ matrix.file }}
           exit-code: "0"
           format: template
-          template: template/sarif.tpl
+          template: "@template/sarif.tpl"
           output:  ${{ matrix.file }}.sarif
 
       - name: Print kubesec-results.sarif
