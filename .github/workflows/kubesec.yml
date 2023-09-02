@@ -51,11 +51,11 @@ jobs:
       - name: Run kubesec scanner
         uses: bsanchezmir/kubesec-action@latest
         with:
-          filename: ${{ matrix.file }}
           exit-code: "0"
           format: template
           template: template/sarif.tpl
           output:  ${{ matrix.file }}.sarif
+          filename: ${{ matrix.file }}
 
       - name: Print kubesec-results.sarif
         run: cat  ${{ matrix.file }}.sarif
