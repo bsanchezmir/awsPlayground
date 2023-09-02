@@ -48,6 +48,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Get sarif.tpl
+        run: wget https://raw.githubusercontent.com/bsanchezmir/kubesec-action/main/sarif.tpl
+
       - name: Run kubesec scanner
         uses: bsanchezmir/kubesec-action@latest
         with:
@@ -55,7 +58,7 @@ jobs:
           template: ./sarif.tpl
           format: template
           output:  ${{ matrix.file }}.sarif
-          input: ${{ matrix.file }}
+          filename: ${{ matrix.file }}
 
       - name: Print kubesec-results.sarif
         run: cat  ${{ matrix.file }}.sarif
