@@ -11,7 +11,7 @@ on:
     - cron: '34 10 * * 3'
 
 jobs:
-  prepare:
+  findyamls:
     runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -29,13 +29,12 @@ jobs:
             fi
           done
           echo "FILE_MATRIX={\"file\": [$k8s_files]}" >> $GITHUB_ENV 
-
       - name: Set matrix
         run: echo "matrix=$FILE_MATRIX" >> $GITHUB_OUTPUT
         id: set-matrix
 
-  scan:
-    needs: prepare
+  kubesec:
+    needs: findyamls
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -43,24 +42,24 @@ jobs:
       contents: read
     strategy:
       matrix:
-        file: ${{fromJson(needs.prepare.outputs.matrix).file }}
+        file: ${{fromJson(needs.findyamls.outputs.matrix).file }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run kubesec scanner
-        uses: controlplaneio/kubesec-action@43d0ddff5ffee89a6bb9f29b64cd865411137b14
-        with:
-          input: ${{ matrix.file }}
-          exit-code: "0"
-          format: template
-          template: template/sarif.tpl
-          output:  ${{ matrix.file }}.sarif
+      - name: Get sarif.tpl
+        run: wget https://raw.githubusercontent.com/bsanchezmir/kubesec-action/main/sarif.tpl
 
-      - name: Print kubesec-results.sarif
-        run: cat  ${{ matrix.file }}.sarif
-          
+      - name: Run kubesec scanner
+        uses: bsanchezmir/kubesec-action@latest
+        with:
+          exit-code: "0"
+          template: ./sarif.tpl
+          format: template
+          output:  ${{ matrix.file }}.sarif
+          filename: ${{ matrix.file }}
+  
       - name: Upload Kubesec scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file:  ${{ matrix.file }}.sarif
+          sarif_file:  ${{ matrix.file }}.sarif 

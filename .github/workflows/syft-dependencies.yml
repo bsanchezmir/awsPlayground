@@ -1,0 +1,36 @@
+name: SBOM upload
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  SBOM-upload:
+
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Syft
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: Directory for SBOM
+      run: mkdir sbom
+
+    - name: Generate SBOM
+      run: syft . -o spdx-json@2.2=sbom/$GITHUB_REPOSITORY.json
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: sbom/
+        
+    - name: SBOM upload
+      uses: advanced-security/spdx-dependency-submission-action@v0.0.1
+      with:
+        filePath: sbom/$GITHUB_REPOSITORY.json
