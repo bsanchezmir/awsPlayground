@@ -1,0 +1,12 @@
+{
+  "name": "vulnerable-app",
+  "version": "1.0.0",
+  "description": "App with critical vulnerability for testing purposes",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "event-stream": "3.3.6"
+  }
+}
