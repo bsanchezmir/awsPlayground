@@ -1,6 +1,5 @@
 FROM node:17-alpine as base
 USER root
-RUN apt-get update && apt-get install -y curl
 RUN curl -O http://example.com/somefile.zip
 COPY . .
 EXPOSE 20-1024
