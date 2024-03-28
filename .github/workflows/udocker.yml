@@ -33,8 +33,10 @@ jobs:
 
     - name: Build Docker Image and Get Digest
       run: |
-        echo "Image Name: $IMAGE_NAME"
-        echo "Current Tag: $CURRENT_TAG"
+        echo ${{ env.IMAGE_NAME }}
+        echo ${{ env.CURRENT_TAG }}
+
+        
         docker build -t "$IMAGE_NAME:$CURRENT_TAG" .
         DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$CURRENT_TAG | awk -F '@' '{print $2}')
         echo "Docker Image Digest: $DIGEST"
