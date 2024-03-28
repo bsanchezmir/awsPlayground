@@ -1,0 +1,52 @@
+name: Check Dockerfile Base Image Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Extract base image from Dockerfile and check for updates
+      id: check
+      run: |
+        # Extract the base image
+        BASE_IMAGE=$(grep ^FROM Dockerfile | awk '{print $2}')
+        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
+        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
+
+        # Fetch the latest tags and compare with the current one
+        # This step might need customization based on the image repository and tag naming convention
+        # Example for Docker Hub:
+        LATEST_TAG=$(wget -q https://registry.hub.docker.com/v1/repositories/${IMAGE_NAME}/tags -O - | jq -r '[.[] | select(.name | test("^[0-9]+\\.[0-9]+\\-alpine$")) | .name] | max_by(split(".") | map(tonumber))')
+
+        if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
+          echo "Newer base image tag available: $LATEST_TAG"
+          echo "Current tag: $CURRENT_TAG"
+          echo "Updating Dockerfile..."
+          
+          # Update Dockerfile with the new tag
+          sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
+          
+          # Set output for next steps
+          echo "::set-output name=updated::true"
+          echo "::set-output name=new_tag::$LATEST_TAG"
+        else
+          echo "No updates found. Current tag ($CURRENT_TAG) is up-to-date."
+          echo "::set-output name=updated::false"
+        fi
+
+    - name: Push changes and create a pull request
+      if: steps.check.outputs.updated == 'true'
+      uses: peter-evans/create-pull-request@v3
+      with:
+        commit-message: Update Dockerfile to ${{ steps.check.outputs.new_tag }}
+        title: Update base image to ${{ steps.check.outputs.new_tag }}
+        body: |
+          This is an automated PR to update the Dockerfile base image to ${{ steps.check.outputs.new_tag }}.
+        branch: update-base-image-${{ steps.check.outputs.new_tag }}
