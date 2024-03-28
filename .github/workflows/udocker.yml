@@ -1,4 +1,4 @@
-name: Check Dockerfile Base Image Updates
+name: Check Dockerfile Base Image Updates and Validate with Image Digest
 
 on:
   schedule:
@@ -12,6 +12,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
     - name: Check for base image updates
       id: check
@@ -49,12 +52,39 @@ jobs:
           echo "updated=false" >> $GITHUB_ENV
         fi
 
-    - name: Push changes and create a pull request
+    - name: Build Docker Image and Get Digest
       if: env.updated == 'true'
+      run: |
+        docker build -t my-image:latest .
+        DIGEST=$(docker images --digests my-image:latest | tail -n1 | awk '{print $3}')
+        echo "Docker Image Digest: $DIGEST"
+        echo "digest=$DIGEST" >> $GITHUB_ENV
+
+    - name: Fetch Latest Image Digest from Docker Hub
+      if: env.updated == 'true'
+      run: |
+        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r '.images[] | select(.architecture=="amd64") | .digest')
+        echo "Latest Image Digest: $LATEST_DIGEST"
+        echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
+
+    - name: Compare Digests
+      if: env.updated == 'true'
+      run: |
+        if [ "$digest" != "$latest_digest" ]; then
+          echo "The local image digest does not match the latest image digest. An update is required."
+          # Potentially trigger another job or step to handle the update
+        else
+          echo "The local image digest matches the latest image digest. No update is required."
+          # Set an environment variable or output to indicate no further action is needed
+          echo "digest_match=true" >> $GITHUB_ENV
+        fi
+
+    - name: Push changes and create a pull request
+      if: env.updated == 'true' && env.digest_match != 'true'
       uses: peter-evans/create-pull-request@v6
       with:
-        commit-message: Update Dockerfile to ${{ env.new_tag }}
-        title: Update base image to ${{ env.new_tag }}
+        commit-message: Update Dockerfile to ${{ env.new_tag }} with digest ${{ env.digest }}
+        title: Update base image to ${{ env.new_tag }} with digest ${{ env.digest }}
         body: |
-          This is an automated PR to update the Dockerfile base image to ${{ env.new_tag }}.
-        branch: update-base-image-${{ env.new_tag }}
+          This is an automated PR to update the Dockerfile base image to ${{ env.new_tag }} with digest ${{ env.digest }}.
+        branch: update-base-image-${{ env.new_tag }}-${{ env.digest }}
