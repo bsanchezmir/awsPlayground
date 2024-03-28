@@ -3,6 +3,7 @@ name: Check Dockerfile Base Image Updates
 on:
   schedule:
     - cron: '0 0 * * *'  # Run daily
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   check-updates:
