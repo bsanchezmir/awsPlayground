@@ -20,13 +20,12 @@ jobs:
           echo "Base image from Dockerfile: $BASE_IMAGE"
           
           # Extract image namespace, repository, and current tag
-          NAMESPACE=$(echo "$BASE_IMAGE" | cut -d'/' -f1)
           REPOSITORY=$(echo "$BASE_IMAGE" | cut -d'/' -f2 | cut -d':' -f1)
           CURRENT_TAG=$(echo "$BASE_IMAGE" | cut -d':' -f2)
-          echo "Namespace: $NAMESPACE, Repository: $REPOSITORY, Current tag: $CURRENT_TAG"
+          echo "Repository: $REPOSITORY, Current tag: $CURRENT_TAG"
 
           # Use the Docker Hub v2 API to fetch tags
-          TAGS_JSON=$(wget -q -O - "https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories/$REPOSITORY/tags?page_size=100")
+          TAGS_JSON=$(wget -q -O - "https://hub.docker.com/v2/namespaces/repositories/$REPOSITORY/tags?page_size=100")
           echo "Tags JSON from Docker Hub for $REPOSITORY:"
           echo "$TAGS_JSON"
 
