@@ -22,22 +22,22 @@ jobs:
         # Read the current base image from the Dockerfile, stopping at the first FROM instruction
         BASE_IMAGE=$(grep -oPm1 'FROM \K.*' Dockerfile | cut -d' ' -f1)
         echo "Base image from Dockerfile: $BASE_IMAGE"
-
+    
         # Extract the image name and tag, ignoring any Dockerfile-specific annotations
-        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1) >> $GITHUB_ENV
+        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
         echo "Image name extracted: $IMAGE_NAME"
-
-        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2) >> $GITHUB_ENV
+        echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+    
+        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
         echo "Current tag extracted: $CURRENT_TAG"
-        
+        echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
 
     - name: Build Docker Image and Get Digest
       run: |
         echo ${{ env.IMAGE_NAME }}
         echo ${{ env.CURRENT_TAG }}
-
         
-        docker build -t "$IMAGE_NAME:$CURRENT_TAG" .
+        docker build -t "${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }}" .
         DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$CURRENT_TAG | awk -F '@' '{print $2}')
         echo "Docker Image Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
