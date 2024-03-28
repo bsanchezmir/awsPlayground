@@ -39,7 +39,7 @@ jobs:
 
     - name: Fetch Latest Image Digest from Docker Hub
       run: |
-        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r ' .digest)
+        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r ' .digest')
         echo "Latest Image Digest: $LATEST_DIGEST"
         echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
 
