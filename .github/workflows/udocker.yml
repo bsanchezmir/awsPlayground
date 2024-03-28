@@ -16,22 +16,26 @@ jobs:
     - name: Check for base image updates
       id: check
       run: |
-        # Read the current base image from the Dockerfile
-        BASE_IMAGE=$(grep -oPm1 'FROM \K.*' Dockerfile)
+        # Read the current base image from the Dockerfile, stopping at the first FROM instruction
+        BASE_IMAGE=$(grep -oPm1 'FROM \K.*' Dockerfile | cut -d' ' -f1)
         echo "Base image from Dockerfile: $BASE_IMAGE"
-        
+
+        # Extract the image name and tag, ignoring any Dockerfile-specific annotations
         IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
         echo "Image name extracted: $IMAGE_NAME"
-        
+
         CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
         echo "Current tag extracted: $CURRENT_TAG"
-        # Make sure to replace the single quotes with double quotes to evaluate the variable
-        LATEST_TAG=$(wget -q https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags?page_size=100 -O - | jq -r "[.[] | select(.name | startswith(\"$CURRENT_TAG\")) | .name] | max_by(split(\".\") | map(tonumber))")
+
+        # Use the Docker Hub API to get the latest tag, assuming the CURRENT_TAG follows semantic versioning
+        LATEST_TAG=$(wget -qO- "https://hub.docker.com/v2/repositories/library/$IMAGE_NAME/tags/?page_size=100" | \
+            jq -r "[.results[] | select(.name | startswith(\"$(echo $CURRENT_TAG | cut -d'-' -f1)\")) | .name] | max_by(split(\".\") | map(tonumber))")
         echo "Latest tag found: $LATEST_TAG"
+
         if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
           echo "A newer base image tag is available: $LATEST_TAG"
           # Update Dockerfile with the new tag
-          sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
+          sed -i "s|$IMAGE_NAME:$CURRENT_TAG|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
           
           # Check the Dockerfile after sed operation
           echo "Dockerfile updated content:"
@@ -44,6 +48,7 @@ jobs:
           echo "No updates found. Current tag ($CURRENT_TAG) is up-to-date."
           echo "updated=false" >> $GITHUB_ENV
         fi
+
     - name: Push changes and create a pull request
       if: env.updated == 'true'
       uses: peter-evans/create-pull-request@v6
