@@ -18,15 +18,27 @@ jobs:
       run: |
         # Read the current base image from the Dockerfile
         BASE_IMAGE=$(grep -oP 'FROM \K.*' Dockerfile)
+        echo "Base image from Dockerfile: $BASE_IMAGE"
+        
         IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
+        echo "Image name extracted: $IMAGE_NAME"
+        
         CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
-        LATEST_TAG=$(wget -q https://registry.hub.docker.com/v1/repositories/$IMAGE_NAME/tags -O - | jq -r '[.[] | select(.name | startswith("$CURRENT_TAG")) | .name] | max_by(split(".") | map(tonumber))')
+        echo "Current tag extracted: $CURRENT_TAG"
+
+        # Make sure to replace the single quotes with double quotes to evaluate the variable
+        LATEST_TAG=$(wget -q https://registry.hub.docker.com/v1/repositories/$IMAGE_NAME/tags -O - | jq -r "[.[] | select(.name | startswith(\"$CURRENT_TAG\")) | .name] | max_by(split(\".\") | map(tonumber))")
+
+        echo "Latest tag found: $LATEST_TAG"
 
         if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
           echo "A newer base image tag is available: $LATEST_TAG"
-          echo "Current tag is: $CURRENT_TAG"
-          echo "Updating Dockerfile..."
+          # Update Dockerfile with the new tag
           sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
+          
+          # Check the Dockerfile after sed operation
+          echo "Dockerfile updated content:"
+          cat Dockerfile
           
           # Use environment file to set the output
           echo "updated=true" >> $GITHUB_ENV
