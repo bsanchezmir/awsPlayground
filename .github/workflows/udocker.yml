@@ -30,28 +30,6 @@ jobs:
         CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
         echo "Current tag extracted: $CURRENT_TAG"
 
-        # Use the Docker Hub API to get the latest tag, assuming the CURRENT_TAG follows semantic versioning
-        LATEST_TAG=$(wget -qO- "https://hub.docker.com/v2/repositories/library/$IMAGE_NAME/tags/?page_size=100" | \
-            jq -r "[.results[] | select(.name | startswith(\"$(echo $CURRENT_TAG | cut -d'-' -f1)\")) | .name] | max_by(split(\".\") | map(tonumber))")
-        echo "Latest tag found: $LATEST_TAG"
-
-        if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
-          echo "A newer base image tag is available: $LATEST_TAG"
-          # Update Dockerfile with the new tag
-          sed -i "s|$IMAGE_NAME:$CURRENT_TAG|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
-          
-          # Check the Dockerfile after sed operation
-          echo "Dockerfile updated content:"
-          cat Dockerfile
-          
-          # Use environment file to set the output
-          echo "updated=true" >> $GITHUB_ENV
-          echo "new_tag=$LATEST_TAG" >> $GITHUB_ENV
-        else
-          echo "No updates found. Current tag ($CURRENT_TAG) is up-to-date."
-          echo "updated=false" >> $GITHUB_ENV
-        fi
-
     - name: Build Docker Image and Get Digest
       if: env.updated == 'true'
       run: |
@@ -63,7 +41,7 @@ jobs:
     - name: Fetch Latest Image Digest from Docker Hub
       if: env.updated == 'true'
       run: |
-        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r '.images[] | select(.architecture=="amd64") | .digest')
+        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r ' .digest)
         echo "Latest Image Digest: $LATEST_DIGEST"
         echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
 
