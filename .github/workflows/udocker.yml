@@ -24,22 +24,23 @@ jobs:
         echo "Base image from Dockerfile: $BASE_IMAGE"
 
         # Extract the image name and tag, ignoring any Dockerfile-specific annotations
-        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
+        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1) >> $GITHUB_ENV
         echo "Image name extracted: $IMAGE_NAME"
 
-        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
+        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2) >> $GITHUB_ENV
         echo "Current tag extracted: $CURRENT_TAG"
+        
 
     - name: Build Docker Image and Get Digest
       run: |
-        docker build -t $IMAGE_NAME:$LATEST_TAG .
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$LATEST_TAG | awk -F '@' '{print $2}')
+        docker build -t $IMAGE_NAME:$CURRENT_TAG .
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$CURRENT_TAG | awk -F '@' '{print $2}')
         echo "Docker Image Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
     - name: Fetch Latest Image Digest from Docker Hub
       run: |
-        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r ' .digest')
+        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$CURRENT_TAG" | jq -r ' .digest')
         echo "Latest Image Digest: $LATEST_DIGEST"
         echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
 
