@@ -38,8 +38,8 @@ jobs:
         echo ${{ env.CURRENT_TAG }}
         
         docker build -t "${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }}" .
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }})
-        echo "Docker Image Digest: $DIGEST"
+        DIGEST=$(docker inspect --format='{{.Id}}' "${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }}" | sed 's/sha256://')
+        echo "Docker Image Local Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
     - name: Fetch Latest Image Digest from Docker Hub
