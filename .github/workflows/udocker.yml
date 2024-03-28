@@ -26,13 +26,15 @@ jobs:
         CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
         echo "Current tag extracted: $CURRENT_TAG"
 
-        # Fetch tags from Docker Hub
-        TAGS_JSON=$(wget -q https://registry.hub.docker.com/v1/repositories/$IMAGE_NAME/tags -O -)
-        echo "Tags fetched from Docker Hub: $TAGS_JSON"
+        # Fetch tags from Docker Hub and print the response
+        TAGS_RESPONSE=$(wget -q -O - https://registry.hub.docker.com/v1/repositories/$IMAGE_NAME/tags)
+        echo "Response from Docker Hub for $IMAGE_NAME tags:"
+        echo "$TAGS_RESPONSE"
 
-        # Parse the tags and find the latest one
-        LATEST_TAG=$(echo $TAGS_JSON | jq -r "[.[] | select(.name | test(\"^$CURRENT_TAG[.]\")) | .name] | max_by(split(\".\") | map(tonumber))")
+        # Parse the tags to find the latest one
+        LATEST_TAG=$(echo $TAGS_RESPONSE | jq -r "[.[] | select(.name | test(\"^$CURRENT_TAG[.]\")) | .name] | max_by(split(\".\") | map(tonumber))")
         
+        echo "Latest tag found: $LATEST_TAG"
         if [ -z "$LATEST_TAG" ]; then
           echo "No newer tags found for the image $IMAGE_NAME with the tag starting $CURRENT_TAG."
           echo "updated=false" >> $GITHUB_ENV
@@ -40,7 +42,7 @@ jobs:
           echo "A newer base image tag is available: $LATEST_TAG"
           sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
           
-          # Check the Dockerfile after sed operation
+          # Check the Dockerfile after the sed operation
           echo "Dockerfile updated content:"
           cat Dockerfile
           
@@ -55,4 +57,5 @@ jobs:
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git add Dockerfile
-        git commit -m "
+        git commit -m "Update Dockerfile to ${{ env.new_tag }}"
+        git push
