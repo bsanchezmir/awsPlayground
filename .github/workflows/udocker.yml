@@ -60,7 +60,6 @@ jobs:
         fi
 
     - name: Push changes and create a pull request
-      if: env.updated == 'true' && env.digest_match != 'true'
       uses: peter-evans/create-pull-request@v6
       with:
         commit-message: Update Dockerfile to ${{ env.new_tag }} with digest ${{ env.digest }}
