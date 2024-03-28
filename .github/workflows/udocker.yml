@@ -38,7 +38,7 @@ jobs:
         echo ${{ env.CURRENT_TAG }}
         
         docker build -t "${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }}" .
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }} ')
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }})
         echo "Docker Image Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
