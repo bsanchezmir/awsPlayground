@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Check for base image updates
         run: |
@@ -53,7 +53,7 @@ jobs:
 
       - name: Push changes and create a pull request
         if: env.updated == 'true'
-        uses: peter-evans/create-pull-request@v10
+        uses: peter-evans/create-pull-request@v6
         with:
           commit-message: Update Dockerfile to ${{ env.new_tag }}
           title: Update base image to ${{ env.new_tag }}
