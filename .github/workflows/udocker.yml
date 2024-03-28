@@ -33,7 +33,7 @@ jobs:
     - name: Build Docker Image and Get Digest
       run: |
         docker build -t my-image:latest .
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$CURRENT_TAG | awk -F @ '{print $2}'')        
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$LATEST_TAG | awk -F '@' '{print $2}')
         echo "Docker Image Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
