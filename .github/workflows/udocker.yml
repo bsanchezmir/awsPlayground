@@ -38,13 +38,13 @@ jobs:
         echo ${{ env.CURRENT_TAG }}
         
         docker build -t "${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }}" .
-        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME:$CURRENT_TAG | awk -F '@' '{print $2}')
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:${{ env.CURRENT_TAG }} | awk -F '@' '{print $2}')
         echo "Docker Image Digest: $DIGEST"
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
     - name: Fetch Latest Image Digest from Docker Hub
       run: |
-        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$CURRENT_TAG" | jq -r ' .digest')
+        LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/${{ env.IMAGE_NAME }}/tags/${{ env.CURRENT_TAG }}" | jq -r ' .digest')
         echo "Latest Image Digest: $LATEST_DIGEST"
         echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
 
