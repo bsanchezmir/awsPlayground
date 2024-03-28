@@ -17,7 +17,7 @@ jobs:
       id: check
       run: |
         # Read the current base image from the Dockerfile
-        BASE_IMAGE=$(grep -oP 'FROM \K.*' Dockerfile)
+        BASE_IMAGE=$(grep -oPm1 'FROM \K.*' Dockerfile)
         echo "Base image from Dockerfile: $BASE_IMAGE"
         
         IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
