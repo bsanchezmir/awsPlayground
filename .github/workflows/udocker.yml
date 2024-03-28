@@ -31,7 +31,6 @@ jobs:
         echo "Current tag extracted: $CURRENT_TAG"
 
     - name: Build Docker Image and Get Digest
-      if: env.updated == 'true'
       run: |
         docker build -t my-image:latest .
         DIGEST=$(docker images --digests my-image:latest | tail -n1 | awk '{print $3}')
@@ -39,14 +38,12 @@ jobs:
         echo "digest=$DIGEST" >> $GITHUB_ENV
 
     - name: Fetch Latest Image Digest from Docker Hub
-      if: env.updated == 'true'
       run: |
         LATEST_DIGEST=$(wget -qO- "https://hub.docker.com/v2/namespaces/library/repositories/$IMAGE_NAME/tags/$LATEST_TAG" | jq -r ' .digest)
         echo "Latest Image Digest: $LATEST_DIGEST"
         echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_ENV
 
     - name: Compare Digests
-      if: env.updated == 'true'
       run: |
         if [ "$digest" != "$latest_digest" ]; then
           echo "The local image digest does not match the latest image digest. An update is required."
