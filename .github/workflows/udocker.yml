@@ -10,52 +10,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Check for base image updates
-      id: check
-      run: |
-        # Read the current base image from the Dockerfile
-        BASE_IMAGE=$(grep -oP 'FROM \K.*' Dockerfile)
-        echo "Base image from Dockerfile: $BASE_IMAGE"
-        
-        IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
-        echo "Image name extracted: $IMAGE_NAME"
-        
-        CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
-        echo "Current tag extracted: $CURRENT_TAG"
-
-        # Fetch tags from Docker Hub and print the response
-        TAGS_RESPONSE=$(wget -q -O - https://registry.hub.docker.com/v1/repositories/$IMAGE_NAME/tags)
-        echo "Response from Docker Hub for $IMAGE_NAME tags:"
-        echo "$TAGS_RESPONSE"
-
-        # Parse the tags to find the latest one
-        LATEST_TAG=$(echo $TAGS_RESPONSE | jq -r "[.[] | select(.name | test(\"^$CURRENT_TAG[.]\")) | .name] | max_by(split(\".\") | map(tonumber))")
-        
-        echo "Latest tag found: $LATEST_TAG"
-        if [ -z "$LATEST_TAG" ]; then
-          echo "No newer tags found for the image $IMAGE_NAME with the tag starting $CURRENT_TAG."
-          echo "updated=false" >> $GITHUB_ENV
-        else
-          echo "A newer base image tag is available: $LATEST_TAG"
-          sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
+      - name: Check for base image updates
+        id: check
+        run: |
+          # Read the current base image from the Dockerfile
+          BASE_IMAGE=$(grep -oP 'FROM \K.*' Dockerfile)
+          echo "Base image from Dockerfile: $BASE_IMAGE"
           
-          # Check the Dockerfile after the sed operation
-          echo "Dockerfile updated content:"
-          cat Dockerfile
+          IMAGE_NAME=$(echo $BASE_IMAGE | cut -d':' -f1)
+          echo "Image name extracted: $IMAGE_NAME"
           
-          # Use environment file to set the output
-          echo "updated=true" >> $GITHUB_ENV
-          echo "new_tag=$LATEST_TAG" >> $GITHUB_ENV
-        fi
+          CURRENT_TAG=$(echo $BASE_IMAGE | cut -d':' -f2)
+          echo "Current tag extracted: $CURRENT_TAG"
 
-    - name: Commit and push if Dockerfile changed
-      if: env.updated == 'true'
-      run: |
-        git config --global user.name 'github-actions'
-        git config --global user.email 'github-actions@github.com'
-        git add Dockerfile
-        git commit -m "Update Dockerfile to ${{ env.new_tag }}"
-        git push
+          # Fetch tags from Docker Hub using the v2 API
+          TAGS_JSON=$(wget -q -O - "https://hub.docker.com/v2/repositories/$IMAGE_NAME/tags?page_size=100")
+          echo "Tags JSON from Docker Hub:"
+          echo "$TAGS_JSON"
+
+          # Parse the tags to find the latest one
+          LATEST_TAG=$(echo $TAGS_JSON | jq -r ".results[] | select(.name | startswith(\"$CURRENT_TAG\")) | .name" | sort -V | tail -n1)
+
+          echo "Latest tag found: $LATEST_TAG"
+          if [ "$CURRENT_TAG" != "$LATEST_TAG" ] && [ -n "$LATEST_TAG" ]; then
+            echo "A newer base image tag is available: $LATEST_TAG"
+            # Update Dockerfile with the new tag
+            sed -i "s|$BASE_IMAGE|$IMAGE_NAME:$LATEST_TAG|g" Dockerfile
+            
+            # Check the Dockerfile after sed operation
+            echo "Dockerfile updated content:"
+            cat Dockerfile
+            
+            # Use environment file to set the output
+            echo "updated=true" >> $GITHUB_ENV
+            echo "new_tag=$LATEST_TAG" >> $GITHUB_ENV
+          else
+            echo "No updates found. Current tag ($CURRENT_TAG) is up-to-date."
+            echo "updated=false" >> $GITHUB_ENV
+          fi
+
+      - name: Commit and push if Dockerfile changed
+        if: env.updated == 'true'
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add Dockerfile
+          git commit -m "Update Dockerfile to ${{ env.new_tag }}"
+          git push
+
+      - name: Create a pull request
+        if: env.updated == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: Update Dockerfile to ${{ env.new_tag }}
+          title: Update base image to ${{ env.new_tag }}
+          body: |
+            This is an automated PR to update the Dockerfile base image to ${{ env.new_tag }}.
+          branch: update-base-image-${{ env.new_tag }}
