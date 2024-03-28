@@ -1,4 +1,4 @@
-FROM node:10.0.0
+FROM node:17-alpine as base
 USER root
 RUN apt-get update && apt-get install -y curl
 RUN curl -O http://example.com/somefile.zip
