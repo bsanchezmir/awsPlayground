@@ -51,7 +51,7 @@ jobs:
     - name: Compare Digests
       run: |
         if [ "$digest" != "$latest_digest" ]; then
-          echo "The local image digest does not match the latest image digest. An update is required."
+          echo "The local image digest does not match the latest images digest. An update is required."
           # Potentially trigger another job or step to handle the update
         else
           echo "The local image digest matches the latest image digest. No update is required."
